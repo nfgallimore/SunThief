@@ -1,1 +1,1 @@
-web: python SunThief.py
+worker: python SunThief.py
