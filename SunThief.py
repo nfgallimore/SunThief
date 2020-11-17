@@ -3,7 +3,7 @@ import time, sched, json, requests, os, datetime
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
-	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=2', headers=auth).json()
+	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
@@ -106,7 +106,7 @@ def loop():
 		print("Starting new analysis...")
 		new_posts = post()
 		print("Analysis finished. %s new posts."%new_posts)
-		time.sleep(60 - ((time.time() - start_time) % 60))
+		time.sleep(10 - ((time.time() - start_time) % 10))
 
 def format_name(post):
 	formatted_time = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%m-%d-%Y at %H:%M')
