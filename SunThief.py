@@ -9,7 +9,7 @@ def post():
 	# format posts to similar way and check if we've already posted it
 	wcb_posts = list(map(lambda x: f'**{x["author"]["username"]}**\n{x["content"]}', wcb)).reverse()
 	versus_posts = list(map(lambda x: x["content"], versus)).reverse()
-	new_posts = list(set(wcb_posts) - set(versus_posts)).reverse()
+	new_posts = list(set(wcb_posts) - set(versus_posts))
 
 	for x in wcb:
 		if f'**{x["author"]["username"]}**\n{x["content"]}' in new_posts:
