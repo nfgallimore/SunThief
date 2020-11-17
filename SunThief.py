@@ -3,40 +3,83 @@ import time, sched, json, requests, os, datetime
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
-	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()
+	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=2', headers=auth).json()
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
-	wcb_posts = list(map(lambda x: format_post(x), wcb))
-	versus_posts = list(map(lambda x: x["content"], versus))
-	new_posts = list(set(wcb_posts) - set(versus_posts))
+	wcb_posts = list(map(lambda x: f'{x["id"]}\n', wcb))
+	new_posts = list(set(wcb_posts) - set(history))[::-1]
 
-	for p in wcb[::-1]:
+	print(history)
+	print(wcb_posts)
+	print(new_posts)
 
-		formatted_post = format_post(p)
-
-		if formatted_post in new_posts:
-			# post content to webhook
-			resp = requests.post(
-				os.environ["SUN_THIEF_WEBHOOK"], 
-				headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-				data={'content': formatted_post})
-			
-			# if unauthorized get a new token and post again
-			if resp.status_code == 401:
-				refresh_token()
-				resp = requests.post(
-					os.environ["SUN_THIEF_WEBHOOK"], 
-					headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-					data={'content': formatted_post})
-			
-			print(resp.status_code)
-			time.sleep(int(1))
+	for i in new_posts:
+		post = wcb[new_posts.index(i)]
+		send_name(post)
+		send_post(post)
 
 	return len(new_posts)
 
+def send_name(p):
+	formatted_name = format_name(p)
+	resp = requests.post(
+		os.environ["SUN_THIEF_WEBHOOK"], 
+		headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+		data={'content': formatted_name})
+	
+	# if unauthorized get a new token and post again
+	if resp.status_code == 401:
+		refresh_token()
+		resp = requests.post(
+			os.environ["SUN_THIEF_WEBHOOK"], 
+			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+			data={'content': formatted_name})
+
+	# retry request after certain time if 429
+	if resp.status_code == 429:
+		time.sleep(int(response.headers["Retry-After"]))
+		resp = requests.post(
+			os.environ["SUN_THIEF_WEBHOOK"], 
+			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+			data={'content': formatted_name})
+
+	else:
+		print (f'{resp.status_code} - {resp.text}')
+
+def send_post(p):
+	formatted_post = format_post(p)
+
+	resp = requests.post(
+		os.environ["SUN_THIEF_WEBHOOK"], 
+		headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+		data={'content': formatted_post})
+	
+	# if unauthorized get a new token and post again
+	if resp.status_code == 401:
+		refresh_token()
+		resp = requests.post(
+			os.environ["SUN_THIEF_WEBHOOK"], 
+			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+			data={'content': formatted_post})
+
+	# retry request after certain time if 429
+	if resp.status_code == 429:
+		time.sleep(int(response.headers["Retry-After"]))
+		resp = requests.post(
+			os.environ["SUN_THIEF_WEBHOOK"], 
+			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
+			data={'content': formatted_post})
+
+	if (resp.status_code == 204):
+		record_post(p)
+
+	else:
+		print (f'Error: {resp.status_code} {resp.content}')
+
+	time.sleep(int(1))
+
 def refresh_token():
-	# get token from discord api
 	resp = requests.post(
 		os.environ["SUN_THIEF_AUTH_URL"], 
 		headers = {
@@ -48,11 +91,12 @@ def refresh_token():
 			'password': os.environ["SUN_THIEF_PASSWORD"]
 		})
 
-	print(resp.status_code)
+	if (resp.status_code == 200):
+		print("Successfully obtained a new token")
+	else: 
+		print("Failed to obtain a new token")
 
-	# set token
 	os.environ["SUN_THIEF_TOKEN"] = resp.json()["token"]
-
 
 def loop(): 
 	start_time = time.time()
@@ -64,12 +108,32 @@ def loop():
 		print("Analysis finished. %s new posts."%new_posts)
 		time.sleep(60 - ((time.time() - start_time) % 60))
 
+def format_name(post):
+	formatted_time = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%m-%d-%Y at %H:%M')
+	return f'**{post["author"]["username"]}** *{formatted_time}*'
+
 def format_post(post):
-	timestamp = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%m-%d-%Y at %H:%M')
-	content = f'**{post["author"]["username"]}** *{timestamp}*\n{post["content"]}'
+	content = f'{post["content"]}'
 	if (post["attachments"] != ""):
 		for a in post["attachments"]:
 			content += a["url"]
 	return content
 
-loop()
+def record_post(post):
+	print(f'Adding post {post["id"]}')
+	history.append(post["id"])
+	file = open("history.txt", "a")
+	file.write(f'{post["id"]}\n')
+	file.close()
+
+def load_history():
+	file = open("history.txt", "r")
+	global history
+	history = file.readlines()
+	file.close()
+
+def main():
+	load_history()
+	loop()
+
+main()
