@@ -3,7 +3,7 @@ import time, sched, json, requests, os
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
-	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()
+	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=1', headers=auth).json()
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
