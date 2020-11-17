@@ -1,4 +1,6 @@
 import time, sched, json, requests, os, datetime
+from datetime import timedelta
+from pytz import timezone
 
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
@@ -8,11 +10,8 @@ def post():
 
 	# format posts to similar way and check if we've already posted it
 	wcb_posts = list(map(lambda x: f'{x["id"]}\n', wcb))
-	new_posts = list(set(wcb_posts) - set(history))[::-1]
+	new_posts = list(set(wcb_posts) - set(history))
 
-	print(history)
-	print(wcb_posts)
-	print(new_posts)
 
 	for i in new_posts:
 		post = wcb[new_posts.index(i)]
@@ -22,11 +21,16 @@ def post():
 	return len(new_posts)
 
 def send_name(p):
-	formatted_name = format_name(p)
+	curr_author = p["author"]["id"]
+	global prev_author
+	if curr_author == prev_author:
+		return
+
+	title = format_title(p)
 	resp = requests.post(
 		os.environ["SUN_THIEF_WEBHOOK"], 
 		headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-		data={'content': formatted_name})
+		data={'content': title})
 	
 	# if unauthorized get a new token and post again
 	if resp.status_code == 401:
@@ -34,18 +38,21 @@ def send_name(p):
 		resp = requests.post(
 			os.environ["SUN_THIEF_WEBHOOK"], 
 			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-			data={'content': formatted_name})
+			data={'content': title})
 
 	# retry request after certain time if 429
 	if resp.status_code == 429:
-		time.sleep(int(response.headers["Retry-After"]))
+		time.sleep(int(resp.headers["Retry-After"]))
 		resp = requests.post(
 			os.environ["SUN_THIEF_WEBHOOK"], 
 			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-			data={'content': formatted_name})
+			data={'content': title})
 
 	else:
-		print (f'{resp.status_code} - {resp.text}')
+		print(f'{resp.status_code} - {resp.text}')
+
+	if resp.status_code == 204:
+		prev_author = curr_author
 
 def send_post(p):
 	formatted_post = format_post(p)
@@ -108,9 +115,8 @@ def loop():
 		print("Analysis finished. %s new posts."%new_posts)
 		time.sleep(10 - ((time.time() - start_time) % 10))
 
-def format_name(post):
-	formatted_time = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%m-%d-%Y at %H:%M')
-	return f'**{post["author"]["username"]}** *{formatted_time}*'
+def format_title(post):
+	return f'**{post["author"]["username"]}** *{format_time(post)}*'
 
 def format_post(post):
 	content = f'{post["content"]}'
@@ -119,20 +125,35 @@ def format_post(post):
 			content += a["url"]
 	return content
 
+def format_time(post):
+	eastern = timezone('US/Eastern')
+	now = datetime.datetime.today()
+	timestamp = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z")
+
+	if timestamp.date() == now.date():
+		formatted_time = timestamp.astimezone(eastern).strftime('Today at %I:%M %p %Z')
+	elif timestamp.date() == (now - timedelta(days = 1)).date():
+		formatted_time = timestamp.astimezone(eastern).strftime('Yesterday at %I:%M %p %Z')
+	else:
+		formatted_time = timestamp.astimezone(eastern).strftime('%m-%d-%Y at %I:%M %p %Z')
+	return formatted_time
+
 def record_post(post):
 	print(f'Adding post {post["id"]}')
-	history.append(post["id"])
+	history.append(f'{post["id"]}\n')
 	file = open("history.txt", "a")
 	file.write(f'{post["id"]}\n')
 	file.close()
 
 def load_history():
-	file = open("history.txt", "r")
 	global history
+	file = open("history.txt", "r")
 	history = file.readlines()
 	file.close()
 
 def main():
+	global prev_author
+	prev_author = None
 	load_history()
 	loop()
 
