@@ -1,4 +1,4 @@
-import time, sched, json, requests, os
+import time, sched, json, requests, os, datetime
 
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
@@ -65,7 +65,7 @@ def loop():
 		time.sleep(60 - ((time.time() - start_time) % 60))
 
 def format_post(post):
-	timestamp = datetime.fromisoformat(post["timestamp"]).strftime('%b. %d %Y, %H:%M')
+	timestamp = datetime.datetime.strptime(post["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%b. %d %Y, %H:%M')
 	content = f'**{post["author"]["username"]}** {timestamp}\n{post["content"]}'
 	if (post["attachments"] != ""):
 		for a in post["attachments"]:
