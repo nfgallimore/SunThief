@@ -7,11 +7,11 @@ def post():
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
-	wcb_posts = list(map(lambda x: f'**{x["author"]["username"]}**\n{x["content"]}', wcb)).reverse()
-	versus_posts = list(map(lambda x: x["content"], versus)).reverse()
+	wcb_posts = list(map(lambda x: f'**{x["author"]["username"]}**\n{x["content"]}', wcb))
+	versus_posts = list(map(lambda x: x["content"], versus))
 	new_posts = list(set(wcb_posts) - set(versus_posts))
 
-	for x in wcb:
+	for x in wcb.reverse():
 		if f'**{x["author"]["username"]}**\n{x["content"]}' in new_posts:
 
 			# format post
