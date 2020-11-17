@@ -5,13 +5,12 @@ from pytz import timezone
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
-	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()
+	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()[::-1]
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
 	wcb_posts = list(map(lambda x: f'{x["id"]}\n', wcb))
 	new_posts = list(set(wcb_posts) - set(history))
-
 
 	for i in new_posts:
 		post = wcb[new_posts.index(i)]
@@ -54,6 +53,9 @@ def send_name(p):
 	if resp.status_code == 204:
 		prev_author = curr_author
 
+	time.sleep(.5)
+
+
 def send_post(p):
 	formatted_post = format_post(p)
 
@@ -84,7 +86,7 @@ def send_post(p):
 	else:
 		print (f'Error: {resp.status_code} {resp.content}')
 
-	time.sleep(int(1))
+	time.sleep(int(2))
 
 def refresh_token():
 	resp = requests.post(
@@ -113,7 +115,7 @@ def loop():
 		print("Starting new analysis...")
 		new_posts = post()
 		print("Analysis finished. %s new posts."%new_posts)
-		time.sleep(10 - ((time.time() - start_time) % 10))
+		time.sleep(15 - ((time.time() - start_time) % 15))
 
 def format_title(post):
 	return f'**{post["author"]["username"]}** *{format_time(post)}*'
