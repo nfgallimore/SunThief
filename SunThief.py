@@ -65,7 +65,8 @@ def loop():
 		time.sleep(60 - ((time.time() - start_time) % 60))
 
 def format_post(post):
-	content = f'**{post["author"]["username"]}**\n{post["content"]}'
+	timestamp = datetime.fromisoformat(post["timestamp"]).strftime('%b. %d %Y, %H:%M')
+	content = f'**{post["author"]["username"]}** {timestamp}\n{post["content"]}'
 	if (post["attachments"] != ""):
 		for a in post["attachments"]:
 			content += a["url"]
