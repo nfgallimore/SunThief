@@ -3,7 +3,7 @@ import time, sched, json, requests, os
 def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
-	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=1', headers=auth).json()
+	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
@@ -55,7 +55,7 @@ def refresh_token():
 	os.environ["SUN_THIEF_TOKEN"] = resp.json()["token"]
 
 
-def loop(): 
+def debug(): 
 	start_time = time.time()
 	print("=========Welcome to Sun Thief 1.0===========")
 
@@ -65,4 +65,7 @@ def loop():
 		print("Analysis finished. %s new posts."%new_posts)
 		time.sleep(60 - ((time.time() - start_time) % 60))
 
-post()
+def main():
+	post()
+
+main()
