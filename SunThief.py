@@ -7,21 +7,20 @@ def post():
 	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
 
 	# format posts to similar way and check if we've already posted it
-	wcb_posts = list(map(lambda x: f'**{x["author"]["username"]}**\n{x["content"]}', wcb))
+	wcb_posts = list(map(lambda x: format_post(x), wcb))
 	versus_posts = list(map(lambda x: x["content"], versus))
 	new_posts = list(set(wcb_posts) - set(versus_posts))
 
-	for x in wcb[::-1]:
-		if f'**{x["author"]["username"]}**\n{x["content"]}' in new_posts:
+	for p in wcb[::-1]:
 
-			# format post
-			content = f'**{x["author"]["username"]}**\n{x["content"]}'
+		formatted_post = format_post(p)
 
+		if formatted_post in new_posts:
 			# post content to webhook
 			resp = requests.post(
 				os.environ["SUN_THIEF_WEBHOOK"], 
 				headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-				data={'content': content})
+				data={'content': formatted_post})
 			
 			# if unauthorized get a new token and post again
 			if resp.status_code == 401:
@@ -29,7 +28,7 @@ def post():
 				resp = requests.post(
 					os.environ["SUN_THIEF_WEBHOOK"], 
 					headers={'Content-Type':'application/x-www-form-urlencoded'}, 
-					data={'content': content})
+					data={'content': formatted_post})
 			
 			print(resp.status_code)
 			time.sleep(int(1))
@@ -67,5 +66,12 @@ def debug():
 
 def main():
 	post()
+
+def format_post(post):
+	content = f'**{post["author"]["username"]}**\n{post["content"]}'
+	if (post["attachments"] != ""):
+		for a in post["attachments"]:
+			content += "\n" + a["url"]
+	return content
 
 main()
