@@ -71,7 +71,7 @@ def format_post(post):
 	content = f'**{post["author"]["username"]}**\n{post["content"]}'
 	if (post["attachments"] != ""):
 		for a in post["attachments"]:
-			content += "\n" + a["url"]
+			content += a["url"]
 	return content
 
 main()
