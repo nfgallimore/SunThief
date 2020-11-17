@@ -54,7 +54,7 @@ def refresh_token():
 	os.environ["SUN_THIEF_TOKEN"] = resp.json()["token"]
 
 
-def debug(): 
+def loop(): 
 	start_time = time.time()
 	print("=========Welcome to Sun Thief 1.0===========")
 
@@ -64,9 +64,6 @@ def debug():
 		print("Analysis finished. %s new posts."%new_posts)
 		time.sleep(60 - ((time.time() - start_time) % 60))
 
-def main():
-	post()
-
 def format_post(post):
 	content = f'**{post["author"]["username"]}**\n{post["content"]}'
 	if (post["attachments"] != ""):
@@ -74,4 +71,4 @@ def format_post(post):
 			content += a["url"]
 	return content
 
-main()
+loop()
