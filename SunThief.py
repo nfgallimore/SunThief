@@ -11,7 +11,7 @@ def post():
 	versus_posts = list(map(lambda x: x["content"], versus))
 	new_posts = list(set(wcb_posts) - set(versus_posts))
 
-	for x in wcb.reverse():
+	for x in wcb[::-1]:
 		if f'**{x["author"]["username"]}**\n{x["content"]}' in new_posts:
 
 			# format post
