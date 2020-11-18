@@ -116,7 +116,7 @@ def loop():
 		time.sleep(30 - ((time.time() - start_time) % 30))
 
 def format_title(post):
-	return f'@Sun Thieves **{post["author"]["username"]}** *{format_time(post)}*'
+	return f'@sunthieves **{post["author"]["username"]}** *{format_time(post)}*'
 
 def format_post(post):
 	content = f'{post["content"]}'
