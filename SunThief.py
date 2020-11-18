@@ -113,10 +113,10 @@ def loop():
 		print("Starting new analysis...")
 		new_posts = post()
 		print("Analysis finished. %s new posts."%new_posts)
-		time.sleep(15 - ((time.time() - start_time) % 15))
+		time.sleep(30 - ((time.time() - start_time) % 30))
 
 def format_title(post):
-	return f'**{post["author"]["username"]}** *{format_time(post)}*'
+	return f'@Sun Thieves **{post["author"]["username"]}** *{format_time(post)}*'
 
 def format_post(post):
 	content = f'{post["content"]}'
