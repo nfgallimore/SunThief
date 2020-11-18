@@ -6,16 +6,15 @@ def post():
 	auth = {'Authorization': os.environ["SUN_THIEF_TOKEN"]}
 
 	wcb = requests.get(f'{os.environ["SUN_THIEF_FROM_CHANNEL"]}?limit=10', headers=auth).json()[::-1]
-	versus = requests.get(f'{os.environ["SUN_THIEF_TO_CHANNEL"]}', headers=auth).json()
+	wcb_ids = list(map(lambda x: f'{x["id"]}\n', wcb))
+	new_posts = list(set(wcb_ids) - set(history))
+	print('Found these ids:', new_posts)
 
-	# format posts to similar way and check if we've already posted it
-	wcb_posts = list(map(lambda x: f'{x["id"]}\n', wcb))
-	new_posts = list(set(wcb_posts) - set(history))
-
-	for i in new_posts:
-		post = wcb[new_posts.index(i)]
-		send_name(post)
-		send_post(post)
+	for i in wcb_ids:
+		if i in new_posts:
+			post = wcb[wcb_ids.index(i)]
+			send_name(post)
+			send_post(post)
 
 	return len(new_posts)
 
@@ -24,6 +23,8 @@ def send_name(p):
 	global prev_author
 	if curr_author == prev_author:
 		return
+
+	time.sleep(1)
 
 	title = format_title(p)
 	resp = requests.post(
@@ -41,22 +42,21 @@ def send_name(p):
 
 	# retry request after certain time if 429
 	if resp.status_code == 429:
-		time.sleep(int(resp.headers["Retry-After"]))
+		time.sleep(2)
 		resp = requests.post(
 			os.environ["SUN_THIEF_WEBHOOK"], 
 			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
 			data={'content': title})
 
-	else:
-		print(f'{resp.status_code} - {resp.text}')
-
 	if resp.status_code == 204:
 		prev_author = curr_author
 
-	time.sleep(.5)
-
+	else:
+		print(f'{resp.status_code} {resp.content}')
 
 def send_post(p):
+	time.sleep(1)
+
 	formatted_post = format_post(p)
 
 	resp = requests.post(
@@ -74,7 +74,7 @@ def send_post(p):
 
 	# retry request after certain time if 429
 	if resp.status_code == 429:
-		time.sleep(int(response.headers["Retry-After"]))
+		time.sleep(int(resp.headers["Retry-After"]))
 		resp = requests.post(
 			os.environ["SUN_THIEF_WEBHOOK"], 
 			headers={'Content-Type':'application/x-www-form-urlencoded'}, 
@@ -84,9 +84,7 @@ def send_post(p):
 		record_post(p)
 
 	else:
-		print (f'Error: {resp.status_code} {resp.content}')
-
-	time.sleep(int(2))
+		print(f'Error: {resp.status_code} {resp.content}')
 
 def refresh_token():
 	resp = requests.post(
