@@ -10,13 +10,17 @@ def post():
 	new_posts = list(set(wcb_ids) - set(history))
 	print('Found these ids:', new_posts)
 
+	length = 0
+
 	for i in wcb_ids:
 		if i in new_posts:
 			post = wcb[wcb_ids.index(i)]
-			send_name(post)
-			send_post(post)
+			if ("WCB Schedule Channel Information" not in post["content"]):
+				send_name(post)
+				send_post(post)
+				length += 1
 
-	return len(new_posts)
+	return length
 
 def send_name(p):
 	curr_author = p["author"]["id"]
@@ -116,7 +120,7 @@ def loop():
 		time.sleep(30 - ((time.time() - start_time) % 30))
 
 def format_title(post):
-	return f'**{post["author"]["username"]}** *{format_time(post)}*'
+	return f'**{post["author"]["username"]}**'
 
 def format_post(post):
 	content = f'{post["content"]}'
